@@ -87,16 +87,16 @@ def cached(cache_dir: Path, key: str, fn):
     return out
 
 
-def train_demo_model(Xz, demo, y, res_dir: Path, seed: int = 0):
+def train_demo_model(Xz, demo, y, res_dir: Path, parcellation: str = "ica25", seed: int = 0):
     """Final model for scripts/demo.py: hold out a stratified 20% of the whole
     cohort, then train the fusion model on a balanced subset of the rest."""
     rest, holdout = train_test_split(np.arange(len(y)), test_size=0.2, stratify=y, random_state=seed)
     train = rest[balance_undersample(y[rest], seed=seed)]
     model = LateFusion().fit(build_features(Xz, demo, "conn")[train], y[train])
     joblib.dump({"model": model, "brain": "conn", "demographics": ["age", "sex", "scanner"],
-                 "parcellation": "ica25", "train_subjects": np.sort(train),
-                 "holdout_subjects": np.sort(holdout)}, res_dir / "demo_model.joblib")
-    log(f"demo model: trained on {len(train)} subjects, {len(holdout)} held out "
+                 "parcellation": parcellation, "train_subjects": np.sort(train),
+                 "holdout_subjects": np.sort(holdout)}, res_dir / f"demo_model_{parcellation}.joblib")
+    log(f"[{parcellation}] demo model: trained on {len(train)} subjects, {len(holdout)} held out "
         f"({int(y[holdout].sum())} heavy drinkers)")
 
 
@@ -125,9 +125,10 @@ def main():
     fig_dir = res_dir / "figures"
     fig_dir.mkdir(parents=True, exist_ok=True)
     if args.demo_model_only:
-        cohort = get_cohort(data_dir, "ica25", cfg["seed"])
         res_dir.mkdir(parents=True, exist_ok=True)
-        train_demo_model(zscore_timeseries(cohort.X), cohort.demographics, cohort.y, res_dir)
+        for parc in cfg["parcellations"]:
+            cohort = get_cohort(data_dir, parc, cfg["seed"])
+            train_demo_model(zscore_timeseries(cohort.X), cohort.demographics, cohort.y, res_dir, parc)
         return
     cache_dir = res_dir / "cache" / ("quick" if args.quick else "full")
     if args.fresh:
@@ -208,8 +209,7 @@ def main():
         plots.plot_permutation(null, score, p, fig_dir / f"permutation_{parc}.png")
         log(f"{parc:12s} permutation test FC fMRI-only: acc={score:.3f} p={p:.4f}")
 
-        if parc == "ica25":
-            train_demo_model(Xz, demo, y, res_dir)
+        train_demo_model(Xz, demo, y, res_dir, parc)
 
     folds = pd.concat(all_folds, ignore_index=True)
     preds = pd.concat(all_preds, ignore_index=True)

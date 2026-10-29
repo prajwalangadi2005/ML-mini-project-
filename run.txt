@@ -1,0 +1,4 @@
+python scripts/run_experiments.py --demo-model-only
+python scripts/demo.py --parcellation craddock100
+python scripts/demo.py --parcellation craddock100 --all
+python scripts/demo.py --all

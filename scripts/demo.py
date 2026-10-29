@@ -4,8 +4,11 @@
     python scripts/demo.py --subject SIM-0042
     python scripts/demo.py --subject SIM-0042 --age 16.2   # "what-if" on age
     python scripts/demo.py --all              # score every held-out subject
+    python scripts/demo.py --parcellation craddock100   # use the Craddock-100 model
+    python scripts/demo.py --parcellation craddock100 --all
 
-Requires results/demo_model.joblib (created by scripts/run_experiments.py).
+Requires results/demo_model_<parcellation>.joblib
+(created by: python scripts/run_experiments.py --demo-model-only).
 """
 import argparse
 import sys
@@ -36,9 +39,15 @@ def main():
     ap.add_argument("--age", type=float, help="override the subject's age (what-if analysis)")
     ap.add_argument("--all", action="store_true", help="evaluate all held-out subjects")
     ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--parcellation", choices=["ica25", "craddock100"], default="ica25",
+                    help="which trained model / atlas to use (default: ica25)")
     args = ap.parse_args()
 
-    bundle = joblib.load(ROOT / "results/demo_model.joblib")
+    model_path = ROOT / f"results/demo_model_{args.parcellation}.joblib"
+    if not model_path.exists():
+        sys.exit(f"{model_path.relative_to(ROOT)} not found. Create it with:\n"
+                 f"    python scripts/run_experiments.py --demo-model-only")
+    bundle = joblib.load(model_path)
     cohort = load_cohort(ROOT / f"data/{bundle['parcellation']}.npz")
     demo = cohort.demographics.copy()
     held_out = bundle.get("holdout_subjects",
@@ -102,7 +111,7 @@ def main():
     axes[1].set_yticks([])
     fig.colorbar(im, ax=axes[1], fraction=0.046)
     fig.suptitle(f"P(heavy drinker) = {p:.2f}  ->  {LABELS[pred]}  (truth: {LABELS[int(cohort.y[s])]})")
-    out = ROOT / "results/demo_subject.png"
+    out = ROOT / f"results/demo_subject_{bundle['parcellation']}.png"
     fig.tight_layout()
     fig.savefig(out, dpi=150)
     print(f" figure saved to {out.relative_to(ROOT)}")
