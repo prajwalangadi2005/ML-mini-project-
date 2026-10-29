@@ -5,8 +5,8 @@ Team:
 
 | Name | SRN |
 |---|---|
-| Harshitha P | PES1UG24CS186 |
-| Gautam Prasanth Nair | PES1UG24CS169 |
+| Prajwal M Angadi | PES1UG24CS592 |
+
 
 This project predicts whether an adolescent (16–19 y) is a **heavy drinker** from
 their **resting-state fMRI** (BOLD signal, `T = 269` volumes, TR = 2.2 s,
